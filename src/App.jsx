@@ -312,19 +312,158 @@ export default function App(){
       setLoadMsg("Reading your video file...");
       const reader=new FileReader();
       const base64=await new Promise((res,rej)=>{reader.onload=e=>res(e.target.result.split(",")[1]);reader.onerror=rej;reader.readAsDataURL(predictFile);});
-      setLoadMsg("Gemini is analyzing your video...");
+      
+      setLoadMsg("Gemini watching every frame of your video...");
       const geminiBody={
         contents:[{parts:[
-          {text:`You are a TikTok viral prediction expert. Watch this video carefully and give a completely unbiased prediction of its viral potential. Analyze everything you actually see: hook quality, pacing, editing, audio, energy, emotional pull, text overlays, and overall structure. Base your analysis ONLY on what you observe in the video. Return ONLY valid JSON in \`\`\`json blocks: {"hookScore":7,"retentionScore":7,"shareabilityScore":7,"emotionScore":7,"overallViralScore":7,"predictedViews":"50K-200K","confidence":"Medium","verdict":"POST IT","hookAnalysis":"exactly what the hook does and why it works or doesn't","whyItWillWork":["specific reason 1","specific reason 2","specific reason 3"],"whyItMightFlop":["specific risk 1","specific risk 2"],"fixBeforePosting":["specific actionable fix 1","specific actionable fix 2","specific actionable fix 3"],"bestTimeToPost":"specific day and time recommendation","captionSuggestion":"full ready-to-post caption with hashtags","viralTrigger":"the one specific thing that could make this explode"}`},
+          {text:`You are a TikTok viral expert who thinks exactly like a viewer scrolling at 2am AND like the TikTok algorithm simultaneously.
+
+Watch this entire video carefully — every frame, every word spoken, every visual transition, every sound.
+
+Then give the most detailed, specific, actionable analysis possible. Reference ACTUAL moments you see in the video. Quote ACTUAL words spoken. Identify EXACT timestamps where things work or fail.
+
+Analyze:
+
+HOOK (0-3 seconds):
+- What is the EXACT first visual a viewer sees?
+- What are the EXACT first words spoken?
+- Does it create an open loop? Curiosity gap? Pattern interrupt?
+- Would a cold audience (non-follower) stop scrolling? Why or why not?
+- Rate the hook 1-10
+
+SCRIPT & PACING:
+- Quote the actual opening line word for word
+- Are sentences short and punchy or long and slow?
+- Where does the energy peak?
+- Where does it dip?
+- Is there a clear setup → tension → payoff structure?
+- What specific line would make someone share this?
+- What specific line would make someone comment?
+
+VISUAL DIRECTION:
+- Camera angles used
+- Cuts and transitions — too slow? Too fast?
+- Text overlays — are they effective?
+- Facial expressions and energy — authentic or forced?
+- B-roll or variety in shots?
+
+AUDIO:
+- Is it original audio or trending sound?
+- Does the music match the energy?
+- Is the speaker's voice clear and engaging?
+- Any audio issues?
+
+ALGORITHM SIGNALS:
+- Loop potential — does the ending connect back to the beginning?
+- Comment bait — does anything spark debate or strong reaction?
+- Share trigger — is there a "I need to send this" moment?
+- Save trigger — is there anything worth saving?
+- Duet/Stitch potential?
+
+VIEWER PSYCHOLOGY:
+- What does a viewer think in the first 0.5 seconds?
+- What makes them stay past 3 seconds?
+- What is the exact emotional journey?
+- Where do most viewers likely drop off and why?
+- What thought would make someone share this?
+
+Return ONLY valid JSON in \`\`\`json blocks:
+{
+  "verdict": "POST IT / NEEDS WORK / RESHOOT",
+  "viralProbability": "X% chance of hitting 100K",
+  "predictedViews": "realistic range",
+  "confidence": "Low/Medium/High",
+  "overallViralScore": 8,
+  "hookScore": 8,
+  "retentionScore": 8,
+  "shareabilityScore": 8,
+  "emotionScore": 8,
+  "loopScore": 8,
+  "commentBaitScore": 8,
+  "algorithmGrade": "A/B/C/D/F",
+  "exactOpeningLine": "quote the actual first words spoken",
+  "exactHook": "describe exactly what happens in first 3 seconds",
+  "hookAnalysis": "detailed honest assessment of the hook",
+  "hookScore_reasoning": "why you gave this hook score",
+  "scriptAnalysis": {
+    "pacing": "assessment of pacing",
+    "peakMoment": "the single best moment in the video",
+    "weakMoment": "the single weakest moment",
+    "shareableLine": "the exact line most likely to cause shares",
+    "commentableLine": "the exact line most likely to cause comments",
+    "narrativeArc": "does it have setup tension payoff?"
+  },
+  "visualAnalysis": {
+    "cameraWork": "assessment",
+    "editing": "assessment",
+    "textOverlays": "assessment",
+    "creatorEnergy": "assessment"
+  },
+  "audioAnalysis": {
+    "type": "Original/Trending",
+    "effectiveness": "assessment",
+    "clarity": "assessment"
+  },
+  "viewerPsychology": {
+    "firstHalfSecond": "exactly what viewer sees and thinks",
+    "threeSecondTest": "STAY or SWIPE and exact reason",
+    "emotionalJourney": "the complete emotional arc",
+    "dropOffPoint": "exact moment and reason most viewers leave",
+    "shareThought": "the exact thought that makes someone share"
+  },
+  "algorithmSignals": {
+    "loopPotential": "assessment",
+    "commentBait": "assessment",
+    "shareTrigger": "assessment",
+    "saveTrigger": "assessment",
+    "stitchDuetPotential": "assessment"
+  },
+  "retentionKillers": ["specific moment 1", "moment 2", "moment 3"],
+  "retentionBoosts": ["specific moment 1", "moment 2"],
+  "rewrittenHook": "the exact rewritten opening that would perform 3x better",
+  "fixBeforePosting": ["specific fix 1", "specific fix 2", "specific fix 3", "fix 4"],
+  "viralVersion": "scene by scene description of how to reshoot this to hit 1M views",
+  "rewrittenCaption": "optimized caption with hashtags",
+  "bestTimeToPost": "specific day and time with reasoning",
+  "competitorAngle": "how a top creator would approach this exact topic",
+  "confidenceScore": "X% confidence in this analysis"
+}`},
           {inline_data:{mime_type:predictFile.type||"video/mp4",data:base64}}
         ]}],
-        generationConfig:{temperature:0.4,maxOutputTokens:2048}
+        generationConfig:{temperature:0.3,maxOutputTokens:4096}
       };
       const res=await fetch("/api/gemini",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key:geminiKey,body:geminiBody})});
       const d=await res.json();
       if(d.error)throw new Error("Gemini: "+(d.error.message||JSON.stringify(d.error)));
       const text=d.candidates?.[0]?.content?.parts?.[0]?.text||"";
-      setPredictResult(parseJSON(text)||{raw:text});
+      
+      // Now run Claude on top of Gemini's analysis for strategy layer
+      setLoadMsg("Claude building your viral strategy...");
+      const geminiAnalysis=parseJSON(text);
+      if(geminiAnalysis){
+        try{
+          const claudeEnhancement=await claude(
+            `You are a TikTok growth strategist. Gemini has watched this video and provided detailed analysis. Your job is to add the strategic growth layer on top.
+Creator context: ${CREATOR_DNA}
+Algorithm knowledge: ${TIKTOK_ALGORITHM}
+Based on Gemini's analysis, provide strategic recommendations that are specific to this creator's growth goals.`,
+            `Gemini's video analysis: ${JSON.stringify(geminiAnalysis)}
+            
+Add to this analysis:
+1. How does this video fit into the creator's overall content strategy?
+2. What pattern does this video establish or break?
+3. What should the next 3 videos be to capitalize on this one?
+4. What specific algorithm play is being missed?
+5. Growth trajectory prediction if they post this vs reshoot it
+
+Return additional JSON fields to merge: {"strategyNote":"specific strategic insight","nextThreeVideos":["video 1 concept","video 2","video 3"],"algorithmPlay":"the specific algorithm strategy being missed","growthTrajectory":"prediction if posted as-is vs after fixes","brandAlignment":"how this fits the creator brand 1-10 and why"}`
+          );
+          const claudeData=parseJSON(claudeEnhancement);
+          setPredictResult({...geminiAnalysis,...(claudeData||{})});
+        }catch(e){setPredictResult(geminiAnalysis);}
+      } else {
+        setPredictResult({raw:text});
+      }
     }catch(e){setError(e.message);}
     setLoading(false);setLoadMsg("");
   };
@@ -789,16 +928,18 @@ ${statsBlock}`
           <div>
             <Card glow>
               <Label color={C.accent}>🎯 Pre-Post Viral Prediction</Label>
-              <div style={{fontSize:13,color:C.muted,lineHeight:1.7,marginBottom:14}}>Upload a video before posting. Gemini watches it and gives a go/no-go verdict with predicted view range and specific fixes.</div>
+              <div style={{fontSize:13,color:C.muted,lineHeight:1.7,marginBottom:6}}>Upload your video — Gemini watches every frame, quotes your actual words, and tells you exactly what to fix. Then Claude adds the growth strategy on top.</div>
+              <div style={{fontSize:11,color:C.green,marginBottom:14}}>⚡ Gemini watches the video · Claude builds the strategy · Most accurate analysis possible</div>
             </Card>
             <Card>
               <Label>Upload Your Video</Label>
               <input ref={predictRef} type="file" accept="video/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(f){setPredictFile(f);setPredictPreview(URL.createObjectURL(f));setPredictResult(null);}}}/>
               {!predictPreview?(
-                <div onClick={()=>predictRef.current?.click()} style={{border:`2px dashed ${C.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",cursor:"pointer"}}>
-                  <div style={{fontSize:32,marginBottom:8}}>📱</div>
-                  <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Tap to upload your video</div>
-                  <div style={{fontSize:12,color:C.muted}}>MP4, MOV — the video you're about to post</div>
+                <div onClick={()=>predictRef.current?.click()} style={{border:`2px dashed ${C.border}`,borderRadius:12,padding:"40px 20px",textAlign:"center",cursor:"pointer"}}>
+                  <div style={{fontSize:40,marginBottom:10}}>📱</div>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Tap to upload your video</div>
+                  <div style={{fontSize:12,color:C.muted,marginBottom:4}}>MP4, MOV, HEIC — the video you're about to post</div>
+                  <div style={{fontSize:11,color:C.accent}}>Gemini will watch every frame and quote your actual words</div>
                 </div>
               ):(
                 <div>
@@ -810,33 +951,143 @@ ${statsBlock}`
                 </div>
               )}
             </Card>
-            {predictPreview&&<div style={{marginBottom:14}}><Btn onClick={runPredict} disabled={loading||!geminiSaved||!predictFile} full color={C.accent}>{loading?loadMsg||"Analyzing...":"Predict Viral Potential 🎯"}</Btn></div>}
+            {predictPreview&&<div style={{marginBottom:14}}><Btn onClick={runPredict} disabled={loading||!geminiSaved||!predictFile} full color={C.accent}>{loading?loadMsg||"Analyzing...":"Analyze My Video — Gemini + Claude 🎯"}</Btn></div>}
+
             {predictResult&&!predictResult.raw&&(()=>{
               const r=predictResult;
               const vc=r.verdict&&r.verdict.includes("POST IT")?C.green:r.verdict&&r.verdict.includes("NEEDS")?C.amber:C.red;
               return(
                 <>
+                  {/* Verdict */}
                   <Card glow style={{borderColor:vc+"60"}}>
                     <div style={{textAlign:"center",marginBottom:16}}>
-                      <div style={{fontSize:26,fontWeight:900,color:vc,marginBottom:4}}>{r.verdict}</div>
-                      <div style={{fontSize:13,color:C.muted}}>Confidence: <span style={{color:vc,fontWeight:700}}>{r.confidence}</span> · Predicted: <span style={{color:C.text,fontWeight:700}}>{r.predictedViews} views</span></div>
+                      <div style={{fontSize:24,fontWeight:900,color:vc,marginBottom:4}}>{r.verdict}</div>
+                      <div style={{fontSize:18,fontWeight:800,color:C.text,marginBottom:4}}>{r.viralProbability}</div>
+                      <div style={{fontSize:12,color:C.muted}}>Predicted: <span style={{color:C.text,fontWeight:700}}>{r.predictedViews} views</span> · Grade: <span style={{color:vc,fontWeight:800,fontSize:15}}>{r.algorithmGrade}</span> · Confidence: <span style={{color:C.accent,fontWeight:700}}>{r.confidenceScore}</span></div>
                     </div>
                     <Bar label="Overall Viral Score" score={r.overallViralScore} color={vc}/>
                     <Bar label="Hook" score={r.hookScore} color={C.green}/>
                     <Bar label="Retention" score={r.retentionScore} color={C.amber}/>
                     <Bar label="Shareability" score={r.shareabilityScore} color={C.pink}/>
                     <Bar label="Emotional Pull" score={r.emotionScore} color="#FF9F47"/>
+                    <Bar label="Loop Potential" score={r.loopScore} color={C.blue}/>
+                    <Bar label="Comment Bait" score={r.commentBaitScore} color={C.pink}/>
                   </Card>
-                  <Card><Label color={C.green}>Hook Analysis</Label><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7,marginBottom:14}}>{r.hookAnalysis}</div><Label color={C.accent}>Viral Trigger</Label><div style={{fontSize:14,fontWeight:700,color:C.text,lineHeight:1.6}}>{r.viralTrigger}</div></Card>
+
+                  {/* Gemini's actual observations */}
+                  {r.exactOpeningLine&&(
+                    <Card>
+                      <Label color={C.green}>What Gemini Actually Heard</Label>
+                      <div style={{fontSize:10,color:C.muted,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Your Opening Line</div>
+                      <div style={{fontSize:15,fontWeight:800,color:C.text,background:C.surface,borderRadius:8,padding:"12px 14px",marginBottom:12,fontStyle:"italic"}}>"{r.exactOpeningLine}"</div>
+                      <div style={{fontSize:10,color:C.muted,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Hook (First 3 Seconds)</div>
+                      <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.6}}>{r.exactHook}</div>
+                    </Card>
+                  )}
+
+                  {/* Hook Autopsy */}
                   <Card>
-                    <Label color={C.green}>Why It Will Work</Label>
-                    {(r.whyItWillWork||[]).map((w,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.green}}>✓</span><span style={{fontSize:13,color:"#C8CAE0"}}>{w}</span></div>)}
-                    <div style={{height:1,background:C.border,margin:"12px 0"}}/>
-                    <Label color={C.red}>Why It Might Flop</Label>
-                    {(r.whyItMightFlop||[]).map((w,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.red}}>✕</span><span style={{fontSize:13,color:"#C8CAE0"}}>{w}</span></div>)}
+                    <Label color={r.hookScore>=7?C.green:r.hookScore>=5?C.amber:C.red}>Hook Analysis</Label>
+                    <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7,marginBottom:10}}>{r.hookAnalysis}</div>
+                    {r.hookScore_reasoning&&<div style={{fontSize:12,color:C.muted,lineHeight:1.6,fontStyle:"italic"}}>{r.hookScore_reasoning}</div>}
                   </Card>
-                  {(r.fixBeforePosting||[]).length>0&&<Card style={{borderColor:C.amber+"50"}}><Label color={C.amber}>Fix Before Posting</Label>{r.fixBeforePosting.map((f,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.amber}}>⚡</span><span style={{fontSize:13,color:"#C8CAE0"}}>{f}</span></div>)}</Card>}
-                  <Card><Label color={C.blue}>Best Time to Post</Label><div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:14}}>{r.bestTimeToPost}</div><Label color={C.pink}>Ready-to-Post Caption</Label><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.8,background:C.surface,borderRadius:8,padding:"12px 14px"}}>{r.captionSuggestion}</div></Card>
+
+                  {/* Script Analysis */}
+                  {r.scriptAnalysis&&(
+                    <Card>
+                      <Label color={C.accent}>Script Deep Dive</Label>
+                      {r.scriptAnalysis.peakMoment&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:C.green,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Best Moment</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>"{r.scriptAnalysis.peakMoment}"</div></div>}
+                      {r.scriptAnalysis.weakMoment&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:C.red,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Weakest Moment</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>"{r.scriptAnalysis.weakMoment}"</div></div>}
+                      {r.scriptAnalysis.shareableLine&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:C.amber,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Most Shareable Line</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>"{r.scriptAnalysis.shareableLine}"</div></div>}
+                      {r.scriptAnalysis.pacing&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Pacing</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>{r.scriptAnalysis.pacing}</div></div>}
+                      {r.scriptAnalysis.narrativeArc&&<div><div style={{fontSize:10,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:3}}>Narrative Arc</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>{r.scriptAnalysis.narrativeArc}</div></div>}
+                    </Card>
+                  )}
+
+                  {/* Viewer Psychology */}
+                  {r.viewerPsychology&&(
+                    <Card>
+                      <Label color={C.green}>Viewer Psychology</Label>
+                      {Object.entries(r.viewerPsychology).map(([key,val])=>(
+                        <div key={key} style={{background:C.surface,borderRadius:8,padding:"10px 12px",marginBottom:8}}>
+                          <div style={{fontSize:10,color:C.green,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:4}}>{key.replace(/([A-Z])/g," $1").trim()}</div>
+                          <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>{val}</div>
+                        </div>
+                      ))}
+                    </Card>
+                  )}
+
+                  {/* Visual + Audio */}
+                  {(r.visualAnalysis||r.audioAnalysis)&&(
+                    <Card>
+                      {r.visualAnalysis&&<><Label color={C.amber}>Visual Analysis</Label>
+                        {Object.entries(r.visualAnalysis).map(([k,v])=><div key={k} style={{marginBottom:8}}><div style={{fontSize:10,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>{k.replace(/([A-Z])/g," $1").trim()}</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>{v}</div></div>)}
+                      </>}
+                      {r.audioAnalysis&&<><div style={{height:1,background:C.border,margin:"12px 0"}}/><Label color={C.blue}>Audio Analysis</Label>
+                        {Object.entries(r.audioAnalysis).map(([k,v])=><div key={k} style={{marginBottom:8}}><div style={{fontSize:10,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:2}}>{k}</div><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.5}}>{v}</div></div>)}
+                      </>}
+                    </Card>
+                  )}
+
+                  {/* Algorithm Signals */}
+                  {r.algorithmSignals&&(
+                    <Card>
+                      <Label color={C.accent}>Algorithm Signals</Label>
+                      {Object.entries(r.algorithmSignals).map(([k,v])=>(
+                        <div key={k} style={{display:"flex",gap:10,marginBottom:9}}>
+                          <span style={{color:C.accent,flexShrink:0}}>◆</span>
+                          <div><span style={{fontSize:11,color:C.muted,textTransform:"uppercase",letterSpacing:"0.08em"}}>{k.replace(/([A-Z])/g," $1").trim()}: </span><span style={{fontSize:13,color:"#C8CAE0"}}>{v}</span></div>
+                        </div>
+                      ))}
+                    </Card>
+                  )}
+
+                  {/* Retention */}
+                  <Card>
+                    <Label color={C.red}>Retention Killers</Label>
+                    {(r.retentionKillers||[]).map((k,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.red}}>✕</span><span style={{fontSize:13,color:"#C8CAE0"}}>{k}</span></div>)}
+                    <div style={{height:1,background:C.border,margin:"12px 0"}}/>
+                    <Label color={C.green}>Retention Boosts</Label>
+                    {(r.retentionBoosts||[]).map((b,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.green}}>✓</span><span style={{fontSize:13,color:"#C8CAE0"}}>{b}</span></div>)}
+                  </Card>
+
+                  {/* Fixes */}
+                  <Card style={{borderColor:C.amber+"50"}}>
+                    <Label color={C.amber}>Fix Before Posting</Label>
+                    {(r.fixBeforePosting||[]).map((f,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.amber,fontWeight:800}}>{i+1}.</span><span style={{fontSize:13,color:"#C8CAE0"}}>{f}</span></div>)}
+                  </Card>
+
+                  {/* Rewritten hook */}
+                  <Card glow>
+                    <Label color={C.green}>Rewritten Hook — 3x Stronger</Label>
+                    <div style={{fontSize:16,fontWeight:800,color:C.text,background:C.surface,borderRadius:8,padding:"14px 16px",marginBottom:14,fontStyle:"italic"}}>"{r.rewrittenHook}"</div>
+                    <Label color={C.pink}>Optimized Caption</Label>
+                    <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.8,background:C.surface,borderRadius:8,padding:"12px 14px",marginBottom:14}}>{r.rewrittenCaption}</div>
+                    <Label color={C.blue}>Best Time to Post</Label>
+                    <div style={{fontSize:13,fontWeight:700,color:C.text}}>{r.bestTimeToPost}</div>
+                  </Card>
+
+                  {/* Viral version */}
+                  <Card>
+                    <Label color={C.accent}>How to Reshoot for 1M Views</Label>
+                    <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.8}}>{r.viralVersion}</div>
+                  </Card>
+
+                  {/* Claude strategy layer */}
+                  {r.strategyNote&&(
+                    <Card glow>
+                      <Label color={C.accent}>Growth Strategy (Claude)</Label>
+                      <div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7,marginBottom:14}}>{r.strategyNote}</div>
+                      {r.nextThreeVideos&&<><Label color={C.green}>Make These Next</Label>
+                        {r.nextThreeVideos.map((v,i)=><div key={i} style={{display:"flex",gap:10,marginBottom:9}}><span style={{color:C.green,fontWeight:800}}>{i+1}.</span><span style={{fontSize:13,color:"#C8CAE0"}}>{v}</span></div>)}
+                      </>}
+                      {r.algorithmPlay&&<><div style={{height:1,background:C.border,margin:"12px 0"}}/><Label color={C.amber}>Algorithm Play You're Missing</Label><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7}}>{r.algorithmPlay}</div></>}
+                      {r.growthTrajectory&&<><div style={{height:1,background:C.border,margin:"12px 0"}}/><Label color={C.blue}>Growth Trajectory</Label><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7}}>{r.growthTrajectory}</div></>}
+                    </Card>
+                  )}
+
+                  {/* Competitor angle */}
+                  {r.competitorAngle&&<Card><Label color={C.pink}>How a Top Creator Would Do This</Label><div style={{fontSize:13,color:"#C8CAE0",lineHeight:1.7}}>{r.competitorAngle}</div></Card>}
                 </>
               );
             })()}
@@ -844,7 +1095,6 @@ ${statsBlock}`
           </div>
         )}
 
-        {/* ══ COMPETITOR ══ */}
         {tab==="competitor"&&(
           <div>
             <Card>
