@@ -465,35 +465,52 @@ Return ONLY valid JSON in \`\`\`json blocks:
       }catch(e){statsBlock="Apify error: "+e.message;}
     }
 
-    setLoadMsg("Running deep algorithm analysis...");
-    // Use Gemini to analyze the script/transcript if we have it
+    // Gemini ALWAYS runs — analyzes whatever data we have
+    setLoadMsg("Gemini analyzing video content...");
     let geminiScriptAnalysis = "";
-    if(videoContext&&videoContext.transcript&&videoContext.transcript!=="No transcript available"){
-      setLoadMsg("Gemini reading the actual script...");
-      try{
-        geminiScriptAnalysis = await geminiText(geminiKey,
-          `You are a TikTok script analyst. Analyze this video script/transcript word by word.
-          
-TRANSCRIPT: "${videoContext.transcript}"
-CAPTION: "${videoContext.caption}"
-DURATION: ${videoContext.duration}s
-PERFORMANCE: ${videoContext.performanceSummary}
+    try{
+      const transcriptSection = videoContext&&videoContext.transcript&&videoContext.transcript!=="No transcript available"
+        ? `ACTUAL TRANSCRIPT (spoken words): "${videoContext.transcript}"`
+        : `NO TRANSCRIPT AVAILABLE — analyze based on caption and performance data`;
+      
+      const captionSection = videoContext
+        ? `CAPTION: "${videoContext.caption}"
+HASHTAGS: ${videoContext.hashtags}
+MUSIC: ${videoContext.music} (${videoContext.isOriginalAudio?"Original Audio":"Trending Audio"})
+DURATION: ${videoContext.duration}s`
+        : deepMode==="manual" ? `CREATOR DESCRIPTION: ${deepText}` : "No data available";
 
-Analyze:
-1. The exact opening hook — first sentence, first word choice
-2. Pacing — are sentences short and punchy or long and slow?
-3. Emotional triggers — which specific words create emotion
-4. The narrative arc — setup, tension, payoff
-5. Call to action — is there one? Is it effective?
-6. What specific line or moment likely caused most people to drop off
-7. What specific line or moment likely caused shares
-8. Rewrite the hook to be 3x stronger
-9. What's missing from this script that top creators always include
+      const performanceSection = videoContext
+        ? `PERFORMANCE: ${videoContext.performanceSummary}
+SHARE RATIO: ${videoContext.shareRatio}% | LIKE RATIO: ${videoContext.likeRatio}% | COMMENT RATIO: ${videoContext.commentRatio}%`
+        : "No performance data";
 
-Be extremely specific. Quote actual words from the transcript.`
-        );
-      }catch(e){geminiScriptAnalysis="Gemini script analysis unavailable: "+e.message;}
-    }
+      geminiScriptAnalysis = await geminiText(geminiKey,
+        `You are a TikTok content analyst who thinks like both a viewer AND the algorithm. Analyze this video deeply.
+
+${transcriptSection}
+
+${captionSection}
+
+${performanceSection}
+
+Analyze ALL of the following:
+1. HOOK ANALYSIS — first words/sentence, does it stop the scroll? Why or why not?
+2. SCRIPT PACING — are sentences short and punchy or slow and long?
+3. EMOTIONAL TRIGGERS — which specific words or phrases create emotion?
+4. NARRATIVE ARC — is there a setup, tension, payoff structure?
+5. CALL TO ACTION — is there one? Is it effective?
+6. DROP-OFF PREDICTION — what specific moment likely caused people to leave?
+7. SHARE TRIGGER — what specific moment likely caused shares?
+8. CAPTION EFFECTIVENESS — does the caption drive comments? Does it have a hook?
+9. HASHTAG STRATEGY — are the hashtags optimal for reach?
+10. MUSIC CHOICE — does original vs trending audio help or hurt?
+11. REWRITTEN HOOK — give a stronger version of the opening hook
+12. MISSING ELEMENTS — what do top viral creators include that this video is missing?
+
+Be extremely specific. Reference actual words from the transcript or caption. Give actionable insights not generic advice.`
+      );
+    }catch(e){geminiScriptAnalysis="Gemini analysis error: "+e.message;}
 
     setLoadMsg("Claude synthesizing everything...");
     const raw=await claude(
