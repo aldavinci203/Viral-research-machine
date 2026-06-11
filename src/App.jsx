@@ -21,45 +21,39 @@ const C = {
   pink: "#FF4ECD", blue: "#38BDF8", text: "#EEEEF5", muted: "#6B6F8A", dim: "#393D5C",
 };
 
-// ── API helpers ───────────────────────────────────────────────────────────────
+// ── API helpers — all routed through Vercel proxy functions ──────────────────
 async function geminiText(key, prompt) {
   const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 2048 } };
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const res = await fetch(`/api/gemini`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, body }) });
   const d = await res.json();
-  if (d.error) throw new Error("Gemini: " + d.error.message);
+  if (d.error) throw new Error("Gemini: " + (d.error.message || JSON.stringify(d.error)));
   return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 async function geminiVideo(key, url, prompt) {
   const body = { contents: [{ parts: [{ text: prompt }, { file_data: { mime_type: "video/mp4", file_uri: url } }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 2048 } };
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const res = await fetch(`/api/gemini`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, body }) });
   const d = await res.json();
-  if (d.error) throw new Error("Gemini: " + d.error.message);
+  if (d.error) throw new Error("Gemini: " + (d.error.message || JSON.stringify(d.error)));
   return d.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 async function apifyTikTokVideo(token, url) {
-  const res = await fetch(`https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/run-sync-get-dataset-items?token=${token}`,
+  const res = await fetch(`/api/apify`,
     { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: false, shouldDownloadCovers: false }) });
+      body: JSON.stringify({ token, body: { postURLs: [url], resultsPerPage: 1, shouldDownloadVideos: false, shouldDownloadCovers: false } }) });
   const d = await res.json();
   if (!d || !d.length) throw new Error("Apify returned no data.");
   return d[0];
 }
 
 async function apifyTikTokProfile(token, username, count = 20) {
-  // Clean username — strip URL to just handle
   const handle = username.replace("https://www.tiktok.com/@", "").replace("@", "").split("?")[0].trim();
-  const res = await fetch(`https://api.apify.com/v2/acts/clockworks~free-tiktok-scraper/run-sync-get-dataset-items?token=${token}`,
+  const res = await fetch(`/api/apify`,
     { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        profiles: [handle],
-        resultsPerPage: count,
-        shouldDownloadVideos: false,
-        shouldDownloadCovers: false,
-      }) });
+      body: JSON.stringify({ token, body: { profiles: [handle], resultsPerPage: count, shouldDownloadVideos: false, shouldDownloadCovers: false } }) });
   const d = await res.json();
   if (!d || !d.length) throw new Error("Apify couldn't find that profile. Make sure the account is public.");
   return d;
