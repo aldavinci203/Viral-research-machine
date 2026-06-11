@@ -6,14 +6,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { key, model, body } = req.body;
+  const { key, body } = req.body;
   if (!key) return res.status(400).json({ error: 'Missing Gemini key' });
-
-  const modelName = model || 'gemini-2.5-flash-lite-preview-06-17';
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
