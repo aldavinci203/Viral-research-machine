@@ -62,7 +62,7 @@ async function apifyTikTokProfile(token, username, count = 20) {
 async function claude(system, user) {
   const res = await fetch("/api/claude", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system, messages: [{ role: "user", content: user }] })
+    body: JSON.stringify({ model: "claude-opus-4-5", max_tokens: 1000, system, messages: [{ role: "user", content: user }] })
   });
   const d = await res.json();
   if (d.error) throw new Error("Claude: " + d.error.message);
