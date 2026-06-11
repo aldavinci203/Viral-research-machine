@@ -50,23 +50,26 @@ async function apifyTikTokVideo(token,url){
   return d[0];
 }
 
-function extractTranscript(video){
-  // Try multiple transcript sources from Apify data
+async function extractTranscript(video){
   if(video.subtitleLinks&&video.subtitleLinks.length>0){
-    return "[Subtitles available — fetched separately]";
+    try{
+      const engSub=video.subtitleLinks.find(s=>s.language==="eng-US"||s.language==="en")||video.subtitleLinks[0];
+      if(engSub&&engSub.link){
+        const res=await fetch("/api/proxy?url="+encodeURIComponent(engSub.link));
+        if(res.ok){
+          const raw=await res.text();
+          const clean=raw.split("\n").filter(l=>!/^WEBVTT|^\d+$|-->/.test(l.trim())).join(" ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+          if(clean.length>20)return clean;
+        }
+      }
+    }catch(e){console.log("Sub failed",e.message);}
   }
-  if(video.videoSuggestedWords&&video.videoSuggestedWords.length>0){
-    return video.videoSuggestedWords.join(" ");
-  }
-  if(video.textExtra&&video.textExtra.length>0){
-    const words=video.textExtra.filter(t=>t.awemeId).map(t=>t.hashtagName||t.awemeId);
-    if(words.length>0)return words.join(" ");
-  }
-  // Fall back to caption as script proxy
+  if(video.videoSuggestedWords&&video.videoSuggestedWords.length>0)return video.videoSuggestedWords.join(" ");
+  if(video.ocrText)return video.ocrText;
   return video.desc||"No transcript available";
 }
 
-function buildVideoContext(video){
+async function buildVideoContext(video){
   const fans=video.authorMeta?.fans||1;
   const views=video.playCount||0;
   const likes=video.diggCount||0;
@@ -76,7 +79,7 @@ function buildVideoContext(video){
   const shareRatio=views>0?((shares/views)*100).toFixed(2):0;
   const likeRatio=views>0?((likes/views)*100).toFixed(2):0;
   const commentRatio=views>0?((comments/views)*100).toFixed(2)*1:0;
-  const transcript=extractTranscript(video);
+  const transcript=await extractTranscript(video);
   const hashtags=(video.textExtra||[]).map(t=>t.hashtagName).filter(Boolean).join(", ")||"none";
   
   return {
@@ -335,7 +338,7 @@ export default function App(){
       setLoadMsg("Apify pulling transcript + stats...");
       try{
         engagementData=await apifyTikTokVideo(apifyKey,compUrl);
-        const ctx=buildVideoContext(engagementData);
+        const ctx=await buildVideoContext(engagementData);
         engBlock=ctx.fullText;
       }catch(e){engBlock="Apify error: "+e.message;}
     }
