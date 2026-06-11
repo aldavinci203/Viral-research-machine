@@ -60,7 +60,7 @@ async function apifyTikTokProfile(token, username, count = 20) {
 }
 
 async function claude(system, user) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("/api/claude", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system, messages: [{ role: "user", content: user }] })
   });
